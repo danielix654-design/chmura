@@ -303,12 +303,10 @@
     <script>
         // --- POŁĄCZENIE Z TWOIM SUPABASE ---
         const SUPABASE_URL = "https://ojzdprutfaqwnztlrhpp.supabase.co"; 
-        
-        // TUTAJ WKLEJ CAŁY, PEŁNY KLUCZ SKOPIOWANY PRZYCISKIEM "COPY" Z SUPABASE
         const SUPABASE_ANON_KEY = "sb_publishable_-__5TYm1hFjw6wZ2Mmk3TQ_t-Cgf9ji"; 
         
-        const _supabaseClient = window.supabase || supabase;
-        const supabaseInstance = _supabaseClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Bezpieczne przypisanie instancji
+        const supabaseInstance = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // --- ANIMACJA ŚNIEGU ---
         const canvas = document.getElementById('snowCanvas');
@@ -379,7 +377,7 @@
         let loggedUser = ""; 
         let uploadedPhotos = [];
 
-function renderPhotos() {
+        function renderPhotos() {
             photoList.innerHTML = '';
             if (uploadedPhotos.length === 0) {
                 const emptyDiv = document.createElement('div');
@@ -396,27 +394,31 @@ function renderPhotos() {
                     
                     const label = document.createElement('div');
                     label.className = 'photo-label';
-                    label.textContent = photo.name; // Uproszczony tekst pod miniaturką
+                    label.textContent = photo.name;
 
                     photoItem.appendChild(img);
                     photoItem.appendChild(label);
                     
-                    // KLIKNIĘCIE W OBRAZEK - OTWIERA MODAL ZAMIAST OD RAZU POBIERAĆ
+                    // OTWIERANIE MODALA PO KLIKNIĘCIU W MINIATURKĘ
                     photoItem.addEventListener('click', () => {
                         const modal = document.getElementById('imageModal');
                         const modalImg = document.getElementById('modalImg');
                         const modalCaption = document.getElementById('modalCaption');
                         const downloadBtn = document.getElementById('modalDownloadBtn');
+                        const deleteBtn = document.getElementById('modalDeleteBtn');
 
                         modal.style.display = "block";
                         modalImg.src = photo.url;
                         modalCaption.textContent = photo.name;
 
-                        // Resetujemy poprzedni event podpięty pod przycisk pobierania
+                        // Klonowanie przycisków aby wyczyścić stare akcje
                         const newDownloadBtn = downloadBtn.cloneNode(true);
                         downloadBtn.parentNode.replaceChild(newDownloadBtn, downloadBtn);
 
-                        // Dodajemy akcję pobierania do nowego przycisku w oknie
+                        const newDeleteBtn = deleteBtn.cloneNode(true);
+                        deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+
+                        // POBIERANIE ZDJĘCIA
                         newDownloadBtn.addEventListener('click', async () => {
                             try {
                                 const res = await fetch(photo.url);
@@ -433,6 +435,44 @@ function renderPhotos() {
                                 alert('blad pobierania, sprobuj ponownie!');
                             }
                         });
+
+                        // USUWANIE ZDJĘCIA
+                        newDeleteBtn.addEventListener('click', async () => {
+                            if (confirm(`Czy na pewno chcesz usunąć zdjęcie: ${photo.name}?`)) {
+                                try {
+                                    const urlParts = photo.url.split('/');
+                                    const cloudFileName = urlParts[urlParts.length - 1];
+
+                                    // Usuwanie z chmury (Storage)
+                                    const { error: storageError } = await supabaseInstance.storage
+                                        .from('photos')
+                                        .remove([cloudFileName]);
+
+                                    if (storageError) {
+                                        alert('Bląd usuwania z chmury: ' + storageError.message);
+                                        return;
+                                    }
+
+                                    // Usuwanie z tabeli (Bazy danych)
+                                    const { error: dbError } = await supabaseInstance
+                                        .from('photos_db')
+                                        .delete()
+                                        .eq('id', photo.id);
+
+                                    if (dbError) {
+                                        alert('Błąd usuwania z bazy: ' + dbError.message);
+                                        return;
+                                    }
+
+                                    modal.style.display = "none";
+                                    alert('Zdjęcie usunięte!');
+                                    loadPhotosFromCloud();
+
+                                } catch (err) {
+                                    alert('Wystąpił błąd: ' + err.message);
+                                }
+                            }
+                        });
                     });
 
                     photoList.appendChild(photoItem);
@@ -440,20 +480,18 @@ function renderPhotos() {
             }
         }
 
-        // OBSŁUGA ZAMYKANIA OKNA PODGLĄDU
+        // ZAMYKANIE MODALA
         document.querySelector('.close-modal').addEventListener('click', () => {
             document.getElementById('imageModal').style.display = "none";
         });
 
-        // Zamknij po kliknięciu gdziekolwiek poza zdjęciem (na ciemne tło)
         document.getElementById('imageModal').addEventListener('click', (e) => {
             if (e.target.id === 'imageModal') {
                 document.getElementById('imageModal').style.display = "none";
             }
         });
 
-        renderPhotos();
-
+        // PRZEŁĄCZANIE REJESTRACJA / LOGOWANIE
         toggleAuthMode.addEventListener('click', () => {
             isLoginMode = !isLoginMode;
             loginInput.value = '';
@@ -469,6 +507,7 @@ function renderPhotos() {
             }
         });
 
+        // REJESTRACJA I LOGOWANIE SYSTEMU
         mainAuthBtn.addEventListener('click', async () => {
             const username = loginInput.value.trim().toLowerCase();
             const password = passwordInput.value.trim();
@@ -483,14 +522,14 @@ function renderPhotos() {
                     let { data, error } = await supabaseInstance.from('users').select('*').eq('username', username);
                     
                     if (error) {
-                        alert('Blad bazy przy logowaniu: ' + error.message);
+                        alert('Blad logowania: ' + error.message);
                         return;
                     }
 
                     if (data && data.length > 0 && data[0].password === password) {
                         loggedUser = username;
                         authView.classList.remove('active');
-                        panelView.classList.add('active'); // NAPRAWIONE: Wyczyszczona klasa 'add'
+                        panelView.classList.add('active');
                         loadPhotosFromCloud();
                     } else {
                         alert('bledny login lub haslo!');
@@ -499,7 +538,7 @@ function renderPhotos() {
                     let { data, error: checkError } = await supabaseInstance.from('users').select('*').eq('username', username);
                     
                     if (checkError) {
-                        alert('Blad podczas sprawdzania konta: ' + checkError.message);
+                        alert('Blad sprawdzania konta: ' + checkError.message);
                         return;
                     }
 
@@ -511,7 +550,7 @@ function renderPhotos() {
                             alert('konto zarejestrowane! mozesz sie zalogowac.');
                             toggleAuthMode.click();
                         } else {
-                            alert('Blad przy tworzeniu konta: ' + insertError.message);
+                            alert('Blad tworzenia konta: ' + insertError.message);
                         }
                     }
                 }
@@ -569,6 +608,9 @@ function renderPhotos() {
                 renderPhotos();
             }
         }
+
+        // Pierwsze uruchomienie czyszczące interfejs
+        renderPhotos();
     </script>
 </body>
 </html>
