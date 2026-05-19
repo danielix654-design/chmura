@@ -43,7 +43,7 @@
             width: 100%;
             height: 100%;
             z-index: 2;
-            pointer-events: none;
+            pointer-events: none; /* Śnieg całkowicie przepuszcza kliknięcia */
         }
 
         .app-container {
@@ -179,10 +179,10 @@
             text-decoration: underline;
             cursor: pointer;
             font-size: 11px;
-            margin-top: 10px;
+            margin-top: 15px;
             text-transform: uppercase;
-            position: relative;
-            z-index: 20;
+            display: inline-block;
+            text-align: center;
         }
 
         .empty-message {
@@ -234,8 +234,9 @@
         const SUPABASE_URL = "https://ojzdprutfaqwnztlrhpp.supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_publishable_-__5TYm1hFjw6wZ2Mmk3TQ_t-Cgf9jiwZ2Mmk3TQ"; 
         
-        // NAPRAWIONE: Zmiana supabase na wielkie Supabase, żeby nie dublować nazwy!
-        const supabase = supabase.createClient ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Całkowicie bezpieczne i uniwersalne wywołanie klienta bazy danych
+        const _supabaseClient = window.supabase || supabase;
+        const supabaseInstance = _supabaseClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // --- ANIMACJA ŚNIEGU ---
         const canvas = document.getElementById('snowCanvas');
@@ -352,6 +353,7 @@
 
         renderPhotos();
 
+        // Przełączanie Trybu Rejestracja / Logowanie
         toggleAuthMode.addEventListener('click', () => {
             isLoginMode = !isLoginMode;
             loginInput.value = '';
@@ -367,6 +369,7 @@
             }
         });
 
+        // Obsługa Przycisku Logowania / Rejestracji
         mainAuthBtn.addEventListener('click', async () => {
             const username = loginInput.value.trim().toLowerCase();
             const password = passwordInput.value.trim();
@@ -378,7 +381,7 @@
 
             try {
                 if (isLoginMode) {
-                    let { data, error } = await supabase.from('users').select('*').eq('username', username);
+                    let { data, error } = await supabaseInstance.from('users').select('*').eq('username', username);
                     
                     if (error) {
                         alert('Blad bazy przy logowaniu: ' + error.message);
@@ -388,13 +391,13 @@
                     if (data && data.length > 0 && data[0].password === password) {
                         loggedUser = username;
                         authView.classList.remove('active');
-                        panelView.classList.add('active');
+                        panelView.classList.add('add', 'active'); 
                         loadPhotosFromCloud();
                     } else {
                         alert('bledny login lub haslo!');
                     }
                 } else {
-                    let { data, error: checkError } = await supabase.from('users').select('*').eq('username', username);
+                    let { data, error: checkError } = await supabaseInstance.from('users').select('*').eq('username', username);
                     
                     if (checkError) {
                         alert('Blad podczas sprawdzania konta: ' + checkError.message);
@@ -404,7 +407,7 @@
                     if (data && data.length > 0) {
                         alert('taki uzytkownik juz istnieje!');
                     } else {
-                        const { error: insertError } = await supabase.from('users').insert([{ username, password }]);
+                        const { error: insertError } = await supabaseInstance.from('users').insert([{ username, password }]);
                         if(!insertError) {
                             alert('konto zarejestrowane! mozesz sie zalogowac.');
                             toggleAuthMode.click();
@@ -438,13 +441,13 @@
                     const fileExt = file.name.split('.').pop();
                     const cloudFileName = `${Math.random()}_${Date.now()}.${fileExt}`;
                     
-                    let { error: uploadError } = await supabase.storage.from('photos').upload(cloudFileName, file);
+                    let { error: uploadError } = await supabaseInstance.storage.from('photos').upload(cloudFileName, file);
                     
                     if (!uploadError) {
-                        const { data } = supabase.storage.from('photos').getPublicUrl(cloudFileName);
+                        const { data } = supabaseInstance.storage.from('photos').getPublicUrl(cloudFileName);
                         const publicUrl = data.publicUrl;
 
-                        await supabase.from('photos_db').insert([
+                        await supabaseInstance.from('photos_db').insert([
                             { name: file.name.toLowerCase(), url: publicUrl, user_owner: loggedUser }
                         ]);
                         
@@ -457,7 +460,7 @@
         });
 
         async function loadPhotosFromCloud() {
-            let { data, error } = await supabase.from('photos_db')
+            let { data, error } = await supabaseInstance.from('photos_db')
                 .select('*')
                 .eq('user_owner', loggedUser)
                 .order('created_at', { ascending: false });
