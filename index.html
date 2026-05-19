@@ -3,15 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prywatna Galeria</title>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <title>megagallery.pl</title>
+    
+    <link rel="icon" type="image/png" href="https://imgur.com/dUkG2Ul.png">
+    
+    <link href="https://fonts.cdnfonts.com/css/minecraft-4" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Press Start 2P', cursive;
+            /* Zmiana na czcionkę Minecraft i wygładzenie pikseli */
+            font-family: 'Minecraft', sans-serif;
+            -webkit-font-smoothing: none;
+            -moz-osx-font-smoothing: none;
+            text-rendering: optimizeSpeed;
         }
 
         body {
@@ -23,18 +30,28 @@
             position: relative;
         }
 
-        .bg-glow {
-            position: absolute;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(160, 0, 255, 0.7) 0%, rgba(0,0,0,0) 70%);
-            border-radius: 50%;
-            filter: blur(40px);
-            z-index: 1;
-            pointer-events: none;
-        }
-        .glow-left { top: -5%; left: -10%; }
-        .glow-right { bottom: -10%; right: -10%; }
+        /* Wielkie i mocno rozmyte kropki w tle */
+        /* BAAAAARDZO ROZMAZANE TŁO (blur podkręcony na 220px dla efektu mgły) */
+.bg-glow {
+    position: absolute;
+    width: 750px;
+    height: 750px;
+    background: radial-gradient(circle, rgba(160, 0, 255, 0.65) 0%, rgba(0,0,0,0) 70%);
+    border-radius: 50%;
+    filter: blur(220px);
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Przesunięcie, żeby przy tym rozmyciu fiolet ładnie nachodził z rogów ekranu */
+.glow-left { 
+    top: -15%; 
+    left: -15%; 
+}
+.glow-right { 
+    bottom: -20%; 
+    right: -20%; 
+}
 
         #snowCanvas {
             position: absolute;
@@ -72,9 +89,9 @@
         .white-btn {
             background-color: #fff;
             color: #000;
-            padding: 18px 45px;
+            padding: 15px 40px;
             border-radius: 50px;
-            font-size: 20px;
+            font-size: 16px; /* Lekka korekta rozmiaru pod nową czcionkę */
             text-transform: lowercase;
             border: none;
             cursor: pointer;
@@ -104,7 +121,7 @@
             background: transparent;
             border: 3px solid #b500ff;
             border-radius: 25px;
-            padding: 22px;
+            padding: 20px;
             color: #a0a0a0;
             font-size: 14px;
             text-align: center;
@@ -148,7 +165,7 @@
             position: relative;
             transition: transform 0.2s;
         }
-
+        
         .photo-item:hover {
             transform: scale(1.02);
         }
@@ -163,7 +180,7 @@
 
         .photo-label {
             padding: 12px;
-            font-size: 10px;
+            font-size: 12px;
             text-align: center;
             color: #b500ff;
             background: rgba(181, 0, 255, 0.05);
@@ -178,9 +195,9 @@
             color: #b500ff;
             text-decoration: underline;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 12px;
             margin-top: 15px;
-            text-transform: uppercase;
+            text-transform: lowercase; /* Zmiana na lowercase dla spójności */
             display: inline-block;
             text-align: center;
         }
@@ -194,77 +211,87 @@
             text-align: center;
             font-size: 14px;
         }
-            /* Style dla okna podglądu (Modal) */
-.modal {
-    display: none; 
-    position: fixed; 
-    z-index: 9999; 
-    padding-top: 50px; 
-    left: 0;
-    top: 0;
-    width: 100%; 
-    height: 100%; 
-    overflow: auto; 
-    background-color: rgba(0, 0, 0, 0.9); /* Czarne tło z przezroczystością */
-    backdrop-filter: blur(5px);
-}
 
-.modal-content {
-    margin: auto;
-    display: block;
-    max-width: 80%;
-    max-height: 70vh;
-    border-radius: 10px;
-    box-shadow: 0 0 20px rgba(168, 85, 247, 0.4); /* Fioletowa poświata pod styl strony */
-}
+        /* Style okna podglądu (Modal) */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 9999; 
+            padding-top: 50px; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(5px);
+        }
 
-#modalCaption {
-    margin: auto;
-    display: block;
-    width: 80%;
-    max-width: 700px;
-    text-align: center;
-    color: #ccc;
-    padding: 15px 0;
-    font-family: monospace;
-    font-size: 16px;
-}
+        .modal-content {
+            margin: auto;
+            display: block;
+            max-width: 80%;
+            max-height: 70vh;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+        }
 
-.close-modal {
-    position: absolute;
-    top: 15px;
-    right: 35px;
-    color: #f1f1f1;
-    font-size: 40px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: 0.3s;
-}
+        #modalCaption {
+            margin: auto;
+            display: block;
+            width: 80%;
+            max-width: 700px;
+            text-align: center;
+            color: #ccc;
+            padding: 15px 0;
+            font-size: 14px;
+        }
 
-.close-modal:hover {
-    color: #bbb;
-}
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
 
-.modal-download-btn {
-    display: block;
-    margin: 10px auto 30px auto;
-    padding: 12px 24px;
-    background-color: #fff;
-    color: #000;
-    border: none;
-    border-radius: 30px;
-    font-family: monospace;
-    font-weight: bold;
-    font-size: 14px;
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
-    transition: transform 0.2s, background-color 0.2s;
-}
+        .close-modal:hover {
+            color: #bbb;
+        }
 
-.modal-download-btn:hover {
-    transform: scale(1.05);
-    background-color: #e0e0e0;
-}
+        .modal-download-btn, .modal-delete-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 30px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        .modal-download-btn {
+            background-color: #fff;
+            color: #000;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-download-btn:hover {
+            transform: scale(1.05);
+            background-color: #e0e0e0;
+        }
+
+        .modal-delete-btn {
+            background-color: #ef4444;
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .modal-delete-btn:hover {
+            transform: scale(1.05);
+            background-color: #dc2626;
+        }
     </style>
 </head>
 <body>
@@ -298,6 +325,16 @@
             <div class="photo-list" id="photoList"></div>
         </div>
 
+        <div id="imageModal" class="modal">
+            <span class="close-modal">&times;</span>
+            <img class="modal-content" id="modalImg">
+            <div id="modalCaption"></div>
+            <div style="text-align: center; display: flex; justify-content: center; gap: 10px; margin-top: 15px;">
+                <button id="modalDownloadBtn" class="modal-download-btn">pobierz zdjecie</button>
+                <button id="modalDeleteBtn" class="modal-delete-btn">usun zdjecie</button>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -305,7 +342,6 @@
         const SUPABASE_URL = "https://ojzdprutfaqwnztlrhpp.supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_publishable_-__5TYm1hFjw6wZ2Mmk3TQ_t-Cgf9ji"; 
         
-        // Bezpieczne przypisanie instancji
         const supabaseInstance = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // --- ANIMACJA ŚNIEGU ---
@@ -399,7 +435,6 @@
                     photoItem.appendChild(img);
                     photoItem.appendChild(label);
                     
-                    // OTWIERANIE MODALA PO KLIKNIĘCIU W MINIATURKĘ
                     photoItem.addEventListener('click', () => {
                         const modal = document.getElementById('imageModal');
                         const modalImg = document.getElementById('modalImg');
@@ -411,14 +446,12 @@
                         modalImg.src = photo.url;
                         modalCaption.textContent = photo.name;
 
-                        // Klonowanie przycisków aby wyczyścić stare akcje
                         const newDownloadBtn = downloadBtn.cloneNode(true);
                         downloadBtn.parentNode.replaceChild(newDownloadBtn, downloadBtn);
 
                         const newDeleteBtn = deleteBtn.cloneNode(true);
                         deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
 
-                        // POBIERANIE ZDJĘCIA
                         newDownloadBtn.addEventListener('click', async () => {
                             try {
                                 const res = await fetch(photo.url);
@@ -436,40 +469,37 @@
                             }
                         });
 
-                        // USUWANIE ZDJĘCIA
                         newDeleteBtn.addEventListener('click', async () => {
-                            if (confirm(`Czy na pewno chcesz usunąć zdjęcie: ${photo.name}?`)) {
+                            if (confirm(`czy na pewno chcesz usunac zdjecie: ${photo.name}?`)) {
                                 try {
                                     const urlParts = photo.url.split('/');
                                     const cloudFileName = urlParts[urlParts.length - 1];
 
-                                    // Usuwanie z chmury (Storage)
                                     const { error: storageError } = await supabaseInstance.storage
                                         .from('photos')
                                         .remove([cloudFileName]);
 
                                     if (storageError) {
-                                        alert('Bląd usuwania z chmury: ' + storageError.message);
+                                        alert('blad usuwania z chmury: ' + storageError.message);
                                         return;
                                     }
 
-                                    // Usuwanie z tabeli (Bazy danych)
                                     const { error: dbError } = await supabaseInstance
                                         .from('photos_db')
                                         .delete()
                                         .eq('id', photo.id);
 
                                     if (dbError) {
-                                        alert('Błąd usuwania z bazy: ' + dbError.message);
+                                        alert('blad usuwania z bazy: ' + dbError.message);
                                         return;
                                     }
 
                                     modal.style.display = "none";
-                                    alert('Zdjęcie usunięte!');
+                                    alert('zdjecie usuniete!');
                                     loadPhotosFromCloud();
 
                                 } catch (err) {
-                                    alert('Wystąpił błąd: ' + err.message);
+                                    alert('wystapil blad: ' + err.message);
                                 }
                             }
                         });
@@ -480,7 +510,6 @@
             }
         }
 
-        // ZAMYKANIE MODALA
         document.querySelector('.close-modal').addEventListener('click', () => {
             document.getElementById('imageModal').style.display = "none";
         });
@@ -491,7 +520,6 @@
             }
         });
 
-        // PRZEŁĄCZANIE REJESTRACJA / LOGOWANIE
         toggleAuthMode.addEventListener('click', () => {
             isLoginMode = !isLoginMode;
             loginInput.value = '';
@@ -507,7 +535,6 @@
             }
         });
 
-        // REJESTRACJA I LOGOWANIE SYSTEMU
         mainAuthBtn.addEventListener('click', async () => {
             const username = loginInput.value.trim().toLowerCase();
             const password = passwordInput.value.trim();
@@ -522,7 +549,7 @@
                     let { data, error } = await supabaseInstance.from('users').select('*').eq('username', username);
                     
                     if (error) {
-                        alert('Blad logowania: ' + error.message);
+                        alert('blad logowania: ' + error.message);
                         return;
                     }
 
@@ -538,7 +565,7 @@
                     let { data, error: checkError } = await supabaseInstance.from('users').select('*').eq('username', username);
                     
                     if (checkError) {
-                        alert('Blad sprawdzania konta: ' + checkError.message);
+                        alert('blad sprawdzania konta: ' + checkError.message);
                         return;
                     }
 
@@ -550,12 +577,12 @@
                             alert('konto zarejestrowane! mozesz sie zalogowac.');
                             toggleAuthMode.click();
                         } else {
-                            alert('Blad tworzenia konta: ' + insertError.message);
+                            alert('blad tworzenia konta: ' + insertError.message);
                         }
                     }
                 }
             } catch (err) {
-                alert('Blad krytyczny: ' + err.message);
+                alert('blad krytyczny: ' + err.message);
             }
         });
 
@@ -609,7 +636,6 @@
             }
         }
 
-        // Pierwsze uruchomienie czyszczące interfejs
         renderPhotos();
     </script>
 </body>
