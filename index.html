@@ -43,7 +43,7 @@
             width: 100%;
             height: 100%;
             z-index: 2;
-            pointer-events: none; /* Śnieg całkowicie przepuszcza kliknięcia */
+            pointer-events: none;
         }
 
         .app-container {
@@ -232,9 +232,10 @@
     <script>
         // --- POŁĄCZENIE Z TWOIM SUPABASE ---
         const SUPABASE_URL = "https://ojzdprutfaqwnztlrhpp.supabase.co"; 
-        const SUPABASE_ANON_KEY = "sb_publishable_-__5TYm1hFjw6wZ2Mmk3TQ_t-Cgf9jiwZ2Mmk3TQ"; 
         
-        // Całkowicie bezpieczne i uniwersalne wywołanie klienta bazy danych
+        // TUTAJ WKLEJ CAŁY, PEŁNY KLUCZ SKOPIOWANY PRZYCISKIEM "COPY" Z SUPABASE
+        const SUPABASE_ANON_KEY = "sb_publishable_-__5TYm1hFjw6wZ2Mmk3TQ_t-Cgf9ji"; 
+        
         const _supabaseClient = window.supabase || supabase;
         const supabaseInstance = _supabaseClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -353,7 +354,6 @@
 
         renderPhotos();
 
-        // Przełączanie Trybu Rejestracja / Logowanie
         toggleAuthMode.addEventListener('click', () => {
             isLoginMode = !isLoginMode;
             loginInput.value = '';
@@ -369,7 +369,6 @@
             }
         });
 
-        // Obsługa Przycisku Logowania / Rejestracji
         mainAuthBtn.addEventListener('click', async () => {
             const username = loginInput.value.trim().toLowerCase();
             const password = passwordInput.value.trim();
@@ -391,7 +390,7 @@
                     if (data && data.length > 0 && data[0].password === password) {
                         loggedUser = username;
                         authView.classList.remove('active');
-                        panelView.classList.add('add', 'active'); 
+                        panelView.classList.add('active'); // NAPRAWIONE: Wyczyszczona klasa 'add'
                         loadPhotosFromCloud();
                     } else {
                         alert('bledny login lub haslo!');
