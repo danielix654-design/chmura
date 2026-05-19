@@ -14,7 +14,6 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            /* Zmiana na czcionkę Minecraft i wygładzenie pikseli */
             font-family: 'Minecraft', sans-serif;
             -webkit-font-smoothing: none;
             -moz-osx-font-smoothing: none;
@@ -30,28 +29,26 @@
             position: relative;
         }
 
-        /* Wielkie i mocno rozmyte kropki w tle */
-        /* BAAAAARDZO ROZMAZANE TŁO (blur podkręcony na 220px dla efektu mgły) */
-.bg-glow {
-    position: absolute;
-    width: 750px;
-    height: 750px;
-    background: radial-gradient(circle, rgba(160, 0, 255, 0.65) 0%, rgba(0,0,0,0) 70%);
-    border-radius: 50%;
-    filter: blur(220px);
-    z-index: 1;
-    pointer-events: none;
-}
+        /* BAAAAARDZO ROZMAZANE TŁO */
+        .bg-glow {
+            position: absolute;
+            width: 750px;
+            height: 750px;
+            background: radial-gradient(circle, rgba(160, 0, 255, 0.65) 0%, rgba(0,0,0,0) 70%);
+            border-radius: 50%;
+            filter: blur(220px);
+            z-index: 1;
+            pointer-events: none;
+        }
 
-/* Przesunięcie, żeby przy tym rozmyciu fiolet ładnie nachodził z rogów ekranu */
-.glow-left { 
-    top: -15%; 
-    left: -15%; 
-}
-.glow-right { 
-    bottom: -20%; 
-    right: -20%; 
-}
+        .glow-left { 
+            top: -15%; 
+            left: -15%; 
+        }
+        .glow-right { 
+            bottom: -20%; 
+            right: -20%; 
+        }
 
         #snowCanvas {
             position: absolute;
@@ -91,7 +88,7 @@
             color: #000;
             padding: 15px 40px;
             border-radius: 50px;
-            font-size: 16px; /* Lekka korekta rozmiaru pod nową czcionkę */
+            font-size: 16px;
             text-transform: lowercase;
             border: none;
             cursor: pointer;
@@ -155,15 +152,18 @@
             padding: 10px;
         }
 
+        /* NAPRAWIONY PODGLĄD - Elastyczna struktura bez obcinania */
         .photo-item {
             width: 100%;
             border: 3px solid #b500ff;
             border-radius: 25px;
             overflow: hidden;
-            background: rgba(0,0,0,0.5);
+            background: rgba(17, 17, 17, 0.6);
             cursor: pointer;
             position: relative;
             transition: transform 0.2s;
+            display: flex;
+            flex-direction: column;
         }
         
         .photo-item:hover {
@@ -172,10 +172,10 @@
 
         .photo-item img {
             width: 100%;
-            display: block;
             max-height: 250px;
-            object-fit: contain;
-            background: #111;
+            object-fit: contain; /* Obrazek dopasuje się w całości bez ucinania krawędzi */
+            background: #080808;
+            display: block;
         }
 
         .photo-label {
@@ -185,6 +185,7 @@
             color: #b500ff;
             background: rgba(181, 0, 255, 0.05);
             text-transform: lowercase;
+            border-top: 1px solid rgba(181, 0, 255, 0.2);
         }
 
         #fileInput {
@@ -197,7 +198,7 @@
             cursor: pointer;
             font-size: 12px;
             margin-top: 15px;
-            text-transform: lowercase; /* Zmiana na lowercase dla spójności */
+            text-transform: lowercase;
             display: inline-block;
             text-align: center;
         }
@@ -212,39 +213,54 @@
             font-size: 14px;
         }
 
-        /* Style okna podglądu (Modal) */
+        /* Nowe style dla zaawansowanego okna modala z zoomem */
         .modal {
             display: none; 
             position: fixed; 
             z-index: 9999; 
-            padding-top: 50px; 
             left: 0;
             top: 0;
             width: 100%; 
             height: 100%; 
-            overflow: auto; 
-            background-color: rgba(0, 0, 0, 0.9);
-            backdrop-filter: blur(5px);
+            background-color: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(8px);
+            overflow: hidden; /* Kontrolujemy przewijanie za pomocą skryptu i przeciągania */
+        }
+
+        /* Kontener trzymający obrazek - pozwala na płynne przesuwanie i skalowanie */
+        .modal-zoom-container {
+            width: 100%;
+            height: calc(100vh - 180px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            user-select: none;
+            position: relative;
+            margin-top: 60px;
+        }
+
+        .modal-zoom-container:active {
+            cursor: grabbing;
         }
 
         .modal-content {
-            margin: auto;
-            display: block;
-            max-width: 80%;
-            max-height: 70vh;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 6px;
+            box-shadow: 0 0 30px rgba(168, 85, 247, 0.3);
+            transform-origin: center center;
+            transition: transform 0.05s ease-out;
+            will-change: transform;
         }
 
         #modalCaption {
-            margin: auto;
-            display: block;
-            width: 80%;
-            max-width: 700px;
             text-align: center;
             color: #ccc;
-            padding: 15px 0;
             font-size: 14px;
+            padding: 5px 0;
+            width: 100%;
         }
 
         .close-modal {
@@ -256,10 +272,49 @@
             font-weight: bold;
             cursor: pointer;
             transition: 0.3s;
+            z-index: 10000;
         }
 
         .close-modal:hover {
-            color: #bbb;
+            color: #b500ff;
+        }
+
+        /* Suwak przybliżenia */
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin: 10px auto;
+            width: 80%;
+            max-width: 300px;
+        }
+
+        .zoom-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: #333;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .zoom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #b500ff;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(181, 0, 255, 0.6);
+        }
+
+        .modal-footer-buttons {
+            text-align: center; 
+            display: flex; 
+            justify-content: center; 
+            gap: 15px; 
+            padding-bottom: 25px;
         }
 
         .modal-download-btn, .modal-delete-btn {
@@ -327,9 +382,20 @@
 
         <div id="imageModal" class="modal">
             <span class="close-modal">&times;</span>
-            <img class="modal-content" id="modalImg">
+            
+            <div class="modal-zoom-container" id="modalZoomContainer">
+                <img class="modal-content" id="modalImg" draggable="false">
+            </div>
+
             <div id="modalCaption"></div>
-            <div style="text-align: center; display: flex; justify-content: center; gap: 10px; margin-top: 15px;">
+
+            <div class="zoom-controls">
+                <span style="font-size: 12px; color: #555;">-</span>
+                <input type="range" class="zoom-slider" id="zoomSlider" min="1" max="5" step="0.1" value="1">
+                <span style="font-size: 12px; color: #b500ff;">+</span>
+            </div>
+
+            <div class="modal-footer-buttons">
                 <button id="modalDownloadBtn" class="modal-download-btn">pobierz zdjecie</button>
                 <button id="modalDeleteBtn" class="modal-delete-btn">usun zdjecie</button>
             </div>
@@ -338,7 +404,6 @@
     </div>
 
     <script>
-        // --- POŁĄCZENIE Z TWOIM SUPABASE ---
         const SUPABASE_URL = "https://ojzdprutfaqwnztlrhpp.supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_publishable_-__5TYm1hFjw6wZ2Mmk3TQ_t-Cgf9ji"; 
         
@@ -409,6 +474,12 @@
         const fileInput = document.getElementById('fileInput');
         const photoList = document.getElementById('photoList');
 
+        // Zmienne do kontroli zaawansowanego przybliżania (Zoom / Pan)
+        let currentScale = 1;
+        let isDragging = false;
+        let startX = 0, startY = 0;
+        let translateX = 0, translateY = 0;
+
         let isLoginMode = true;
         let loggedUser = ""; 
         let uploadedPhotos = [];
@@ -441,6 +512,14 @@
                         const modalCaption = document.getElementById('modalCaption');
                         const downloadBtn = document.getElementById('modalDownloadBtn');
                         const deleteBtn = document.getElementById('modalDeleteBtn');
+                        const zoomSlider = document.getElementById('zoomSlider');
+
+                        // Resetowanie pozycji i przybliżenia przy otwarciu
+                        currentScale = 1;
+                        translateX = 0;
+                        translateY = 0;
+                        zoomSlider.value = 1;
+                        modalImg.style.transform = `translate(0px, 0px) scale(1)`;
 
                         modal.style.display = "block";
                         modalImg.src = photo.url;
@@ -510,16 +589,77 @@
             }
         }
 
+        // --- OBSŁUGA INTERAKTYWNEGO ZOOMU I PRZESUWANIA (DRAG & DROP) ---
+        const modalZoomContainer = document.getElementById('modalZoomContainer');
+        const modalImg = document.getElementById('modalImg');
+        const zoomSlider = document.getElementById('zoomSlider');
+
+        function updateModalImageTransform() {
+            modalImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentScale})`;
+        }
+
+        // Kontrola przybliżenia suwakiem
+        zoomSlider.addEventListener('input', (e) => {
+            currentScale = parseFloat(e.target.value);
+            if (currentScale === 1) {
+                translateX = 0;
+                translateY = 0;
+            }
+            updateModalImageTransform();
+        });
+
+        // Kontrola przybliżenia kółkiem myszy (Myszka Zoom)
+        modalZoomContainer.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomSpeed = 0.15;
+            if (e.deltaY < 0) {
+                currentScale = Math.min(currentScale + zoomSpeed, 5); // Max przybliżenie 5x
+            } else {
+                currentScale = Math.max(currentScale - zoomSpeed, 1); // Min przybliżenie 1x
+            }
+            
+            zoomSlider.value = currentScale;
+            
+            if (currentScale === 1) {
+                translateX = 0;
+                translateY = 0;
+            }
+            updateModalImageTransform();
+        });
+
+        // Przesuwanie złapanego obrazka (Drag)
+        modalZoomContainer.addEventListener('mousedown', (e) => {
+            if (currentScale > 1) {
+                isDragging = true;
+                startX = e.clientX - translateX;
+                startY = e.clientY - translateY;
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                translateX = e.clientX - startX;
+                translateY = e.clientY - startY;
+                updateModalImageTransform();
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        // ZAMYKANIE MODALA
         document.querySelector('.close-modal').addEventListener('click', () => {
             document.getElementById('imageModal').style.display = "none";
         });
 
         document.getElementById('imageModal').addEventListener('click', (e) => {
-            if (e.target.id === 'imageModal') {
+            if (e.target.id === 'imageModal' || e.target.id === 'modalZoomContainer') {
                 document.getElementById('imageModal').style.display = "none";
             }
         });
 
+        // PRZEŁĄCZANIE REJESTRACJA / LOGOWANIE
         toggleAuthMode.addEventListener('click', () => {
             isLoginMode = !isLoginMode;
             loginInput.value = '';
@@ -535,6 +675,7 @@
             }
         });
 
+        // REJESTRACJA I LOGOWANIE SYSTEMU
         mainAuthBtn.addEventListener('click', async () => {
             const username = loginInput.value.trim().toLowerCase();
             const password = passwordInput.value.trim();
