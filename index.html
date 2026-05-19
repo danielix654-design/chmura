@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prywatna Galeria</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+
+        .bg-glow {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(160, 0, 255, 0.7) 0%, rgba(0,0,0,0) 70%);
+            border-radius: 50%;
+            filter: blur(40px);
+            z-index: 1;
+            pointer-events: none;
+        }
+        .glow-left { top: -5%; left: -10%; }
+        .glow-right { bottom: -10%; right: -10%; }
+
+        #snowCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .app-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .top-bar {
+            position: absolute;
+            top: 40px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 60px;
+        }
+
+        .white-btn {
+            background-color: #fff;
+            color: #000;
+            padding: 18px 45px;
+            border-radius: 50px;
+            font-size: 20px;
+            text-transform: lowercase;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(255,255,255,0.15);
+        }
+
+        #authTitle {
+            cursor: default;
+        }
+
+        .view {
+            display: none;
+            width: 100%;
+            max-width: 550px;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+            margin-top: 60px;
+        }
+
+        .view.active {
+            display: flex;
+        }
+
+        .input-field, .action-btn {
+            width: 100%;
+            background: transparent;
+            border: 3px solid #b500ff;
+            border-radius: 25px;
+            padding: 22px;
+            color: #a0a0a0;
+            font-size: 14px;
+            text-align: center;
+            text-transform: lowercase;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .input-field::placeholder {
+            color: #555;
+        }
+
+        .action-btn {
+            color: #fff;
+            cursor: pointer;
+            background: rgba(181, 0, 255, 0.05);
+        }
+
+        .action-btn:hover {
+            background: rgba(181, 0, 255, 0.2);
+            box-shadow: 0 0 20px rgba(181, 0, 255, 0.4);
+        }
+
+        .photo-list {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .photo-item {
+            width: 100%;
+            border: 3px solid #b500ff;
+            border-radius: 25px;
+            overflow: hidden;
+            background: rgba(0,0,0,0.5);
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.2s;
+        }
+
+        .photo-item:hover {
+            transform: scale(1.02);
+        }
+
+        .photo-item img {
+            width: 100%;
+            display: block;
+            max-height: 250px;
+            object-fit: contain;
+            background: #111;
+        }
+
+        .photo-label {
+            padding: 12px;
+            font-size: 10px;
+            text-align: center;
+            color: #b500ff;
+            background: rgba(181, 0, 255, 0.05);
+            text-transform: lowercase;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .toggle-link {
+            color: #b500ff;
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 11px;
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+
+        .empty-message {
+            border: 3px dashed #555;
+            color: #555;
+            cursor: default;
+            padding: 22px;
+            border-radius: 25px;
+            text-align: center;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-glow glow-left"></div>
+    <div class="bg-glow glow-right"></div>
+    <canvas id="snowCanvas"></canvas>
+
+    <div class="app-container">
+
+        <div id="authView" class="view active">
+            <div class="top-bar" style="justify-content: flex-start;">
+                <div class="white-btn" id="authTitle">witamy</div>
+            </div>
+            
+            <input type="text" class="input-field" id="loginInput" placeholder="login np. test">
+            <input type="password" class="input-field" id="passwordInput" placeholder="haslo np. haslo">
+            
+            <button class="action-btn" id="mainAuthBtn">zaloguj sie</button>
+            <span class="toggle-link" id="toggleAuthMode">nie masz konta? zarejestruj sie</span>
+        </div>
+
+        <div id="panelView" class="view">
+            <div class="top-bar">
+                <button class="white-btn" id="publishBtn">publikuj</button>
+                <button class="white-btn" id="logoutBtn">wyloguj sie</button>
+            </div>
+
+            <input type="file" id="fileInput" accept="image/*" multiple>
+
+            <div class="photo-list" id="photoList">
+                </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- POŁĄCZENIE Z TWOIM SUPABASE ---
+        const SUPABASE_URL = "https://ojzdprutfaqwnztlrhpp.supabase.co"; 
+        const SUPABASE_ANON_KEY = "sb_publishable_-__5TYm1hFjw6wZ2Mmk3TQ_t-Cgf9ji"; // <--- TUTAJ WKLEJ SWÓJ DRUGI KLUCZ Z SYMBOLU KLUCZYKA!
+        
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- ANIMACJA ŚNIEGU ---
+        const canvas = document.getElementById('snowCanvas');
+        const ctx = canvas.getContext('2d');
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        const numFlakes = 120;
+        const flakes = [];
+
+        for (let i = 0; i < numFlakes; i++) {
+            flakes.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                r: Math.random() * 2.5 + 1,
+                d: Math.random() * numFlakes,
+                speed: Math.random() * 1.5 + 0.5
+            });
+        }
+
+        function drawSnow() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+            ctx.beginPath();
+            for (let i = 0; i < numFlakes; i++) {
+                const f = flakes[i];
+                ctx.moveTo(f.x, f.y);
+                ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2, true);
+            }
+            ctx.fill();
+            moveSnow();
+        }
+
+        function moveSnow() {
+            for (let i = 0; i < numFlakes; i++) {
+                const f = flakes[i];
+                f.y += f.speed;
+                f.x += Math.sin(f.d) * 0.4;
+
+                if (f.y > height) {
+                    flakes[i] = { x: Math.random() * width, y: 0, r: f.r, d: f.d, speed: f.speed };
+                }
+            }
+        }
+
+        setInterval(drawSnow, 20);
+
+        // --- LOGIKA APLIKACJI ---
+        const authView = document.getElementById('authView');
+        const panelView = document.getElementById('panelView');
+        const authTitle = document.getElementById('authTitle');
+        const mainAuthBtn = document.getElementById('mainAuthBtn');
+        const toggleAuthMode = document.getElementById('toggleAuthMode');
+        const loginInput = document.getElementById('loginInput');
+        const passwordInput = document.getElementById('passwordInput');
+        
+        const publishBtn = document.getElementById('publishBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const fileInput = document.getElementById('fileInput');
+        const photoList = document.getElementById('photoList');
+
+        let isLoginMode = true;
+        let loggedUser = ""; 
+        let uploadedPhotos = [];
+
+        function renderPhotos() {
+            photoList.innerHTML = '';
+            if (uploadedPhotos.length === 0) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'empty-message';
+                emptyDiv.textContent = 'jeszcze nic tu nie ma :)';
+                photoList.appendChild(emptyDiv);
+            } else {
+                uploadedPhotos.forEach(photo => {
+                    const photoItem = document.createElement('div');
+                    photoItem.className = 'photo-item';
+                    
+                    const img = document.createElement('img');
+                    img.src = photo.url;
+                    
+                    const label = document.createElement('div');
+                    label.className = 'photo-label';
+                    label.textContent = `${photo.name} (kliknij aby pobrac)`;
+
+                    photoItem.appendChild(img);
+                    photoItem.appendChild(label);
+                    
+                    photoItem.addEventListener('click', async () => {
+                        try {
+                            const res = await fetch(photo.url);
+                            const blob = await res.blob();
+                            const blobUrl = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = blobUrl;
+                            a.download = photo.name;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(blobUrl);
+                        } catch (err) {
+                            alert('blad pobierania, sprobuj ponownie!');
+                        }
+                    });
+
+                    photoList.appendChild(photoItem);
+                });
+            }
+        }
+
+        renderPhotos();
+
+        toggleAuthMode.addEventListener('click', () => {
+            isLoginMode = !isLoginMode;
+            loginInput.value = '';
+            passwordInput.value = '';
+            if (isLoginMode) {
+                authTitle.textContent = "witamy";
+                mainAuthBtn.textContent = "zaloguj sie";
+                toggleAuthMode.textContent = "nie masz konta? zarejestruj sie";
+            } else {
+                authTitle.textContent = "rejestracja";
+                mainAuthBtn.textContent = "zarejestruj";
+                toggleAuthMode.textContent = "masz juz konto? zaloguj sie";
+            }
+        });
+
+        mainAuthBtn.addEventListener('click', async () => {
+            const username = loginInput.value.trim().toLowerCase();
+            const password = passwordInput.value.trim();
+
+            if (!username || !password) {
+                alert('wpisz login i haslo!');
+                return;
+            }
+
+            if (isLoginMode) {
+                let { data, error } = await supabase.from('users').select('*').eq('username', username).single();
+                if (data && data.password === password) {
+                    loggedUser = username;
+                    authView.classList.remove('active');
+                    panelView.classList.add('active');
+                    loadPhotosFromCloud();
+                } else {
+                    alert('bledny login lub haslo!');
+                }
+            } else {
+                let { data } = await supabase.from('users').select('*').eq('username', username);
+                if (data && data.length > 0) {
+                    alert('taki uzytkownik juz istnieje!');
+                } else {
+                    const { error } = await supabase.from('users').insert([{ username, password }]);
+                    if(!error) {
+                        alert('konto zarejestrowane! mozesz sie zalogowac.');
+                        toggleAuthMode.click();
+                    } else {
+                        alert('blad rejestracji!');
+                    }
+                }
+            }
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            loggedUser = "";
+            uploadedPhotos = [];
+            renderPhotos();
+            panelView.classList.remove('active');
+            authView.classList.add('active');
+            loginInput.value = '';
+            passwordInput.value = '';
+        });
+
+        publishBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', async (e) => {
+            if(e.target.files.length > 0) {
+                for(let file of e.target.files) {
+                    const fileExt = file.name.split('.').pop();
+                    const cloudFileName = `${Math.random()}_${Date.now()}.${fileExt}`;
+                    
+                    let { error: uploadError } = await supabase.storage.from('photos').upload(cloudFileName, file);
+                    
+                    if (!uploadError) {
+                        const { data } = supabase.storage.from('photos').getPublicUrl(cloudFileName);
+                        const publicUrl = data.publicUrl;
+
+                        await supabase.from('photos_db').insert([
+                            { name: file.name.toLowerCase(), url: publicUrl, user_owner: loggedUser }
+                        ]);
+                        
+                        loadPhotosFromCloud();
+                    } else {
+                        alert('blad wysylania pliku do chmury!');
+                    }
+                }
+            }
+        });
+
+        async function loadPhotosFromCloud() {
+            let { data, error } = await supabase.from('photos_db')
+                .select('*')
+                .eq('user_owner', loggedUser)
+                .order('created_at', { ascending: false });
+                
+            if(data) {
+                uploadedPhotos = data;
+                renderPhotos();
+            }
+        }
+    </script>
+</body>
+</html>
